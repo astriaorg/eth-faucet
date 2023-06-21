@@ -101,6 +101,12 @@ or
 docker run -d -p 8080:8080 -e WEB3_PROVIDER=https://some.rpc.endpoint -e KEYSTORE=path/to/keystore -v `pwd`/keystore:/app/keystore -v `pwd`/password.txt:/app/password.txt chainflag/eth-faucet:1.1.0
 ```
 
+#### Build the Docker image
+
+```bash
+docker buildx build -t ghcr.io/astriaorg/astria-faucet:0.0.1-local .
+```
+
 ## License
 
 Distributed under the MIT License. See LICENSE for more information.

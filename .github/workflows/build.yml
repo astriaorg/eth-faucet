@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [astria]
   pull_request:
-    branches: [main]
+    branches: [astria]
 
 jobs:
   build:
