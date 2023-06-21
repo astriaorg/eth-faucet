@@ -18,3 +18,6 @@
 .DS_Store
 
 password.txt
+
+# binary
+eth-faucet
