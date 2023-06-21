@@ -11,7 +11,7 @@
     payout: 1,
   };
 
-  $: document.title = `ETH ${capitalize(faucetInfo.network)} Faucet`;
+  $: document.title = `RIA ${capitalize(faucetInfo.network)} Faucet`;
 
   onMount(async () => {
     const res = await fetch('/api/info');
