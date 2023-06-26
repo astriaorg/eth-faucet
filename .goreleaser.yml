@@ -1,6 +1,6 @@
 before:
   hooks:
-    - npm run build
+    - npm run build-web
     - go mod tidy
 
 builds:
