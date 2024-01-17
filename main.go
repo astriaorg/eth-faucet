@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chainflag/eth-faucet/cmd"
+	"github.com/astriaorg/eth-faucet/cmd"
 )
 
 //go:generate npm run build-web

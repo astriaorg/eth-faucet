@@ -1,6 +1,6 @@
-module github.com/chainflag/eth-faucet
+module github.com/astriaorg/eth-faucet
 
-go 1.17
+go 1.21.3
 
 require (
 	github.com/LK4D4/trylock v0.0.0-20191027065348-ff7e133a5c54

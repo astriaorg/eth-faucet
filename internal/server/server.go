@@ -11,8 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
-	"github.com/chainflag/eth-faucet/internal/chain"
-	"github.com/chainflag/eth-faucet/web"
+	"github.com/astriaorg/eth-faucet/internal/chain"
+	"github.com/astriaorg/eth-faucet/web"
 )
 
 type Server struct {
