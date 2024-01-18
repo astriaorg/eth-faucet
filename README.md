@@ -44,7 +44,7 @@ just web-install-deps
 
 Run front end dev server and Go binary together with `mprocs`
 ```bash
-just run-all-dev
+just run-watch
 ```
 
 ### Configuration

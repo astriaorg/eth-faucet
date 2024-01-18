@@ -1,9 +1,6 @@
 default:
   @just --list
 
-image_name := 'ghcr.io/astriaorg/eth-faucet'
-default_docker_tag := 'local'
-
 # installs developer dependencies for MacOS users with `brew`
 brew-install-dev-deps:
   brew install just
@@ -11,18 +8,18 @@ brew-install-dev-deps:
   brew install golangci-lint
   brew install watchexec
 
-# builds front end web app and go binary
-build-all:
+# installs deps for front end app
+web-install-deps:
+  cd web && npm install
+
+# runs the full web app. generates the front end app before starting the server.
+run:
   go generate -x
-  go build -v
+  go run -v ./... -httpport 8080
 
-# builds docker image w/ `local` tag by default
-docker-build tag=default_docker_tag:
-  docker buildx build -f ./Dockerfile -t {{image_name}}:{{tag}} .
-
-# runs faucet via docker
-docker-run tag=default_docker_tag:
-  docker run --rm -p 8080:8080 {{image_name}}:{{tag}}
+# run cli and restart when code changes
+run-watch:
+  watchexec --exts go,mod,svelte,js,ts,html --clear --restart -- just run
 
 # lints the go code
 go-lint:
@@ -36,34 +33,26 @@ go-test:
 go-test-watch:
   @just _watch-go go-test
 
-# runs the go binary
-go-run:
-  go run -v ./... -httpport 8080
-
-# run cli and restart when code changes
-go-run-watch:
-  @just _watch-go go-run
-
 # formats Go code
 go-fmt:
   go fmt ./...
-
-# installs deps for front end app
-web-install-deps:
-  cd web && npm install
 
 # prettifies web code
 web-fmt:
   cd web && npm run prettier
 
-# run the front end dev server
-web-run:
-  cd web && npm run dev
+## Docker
 
-# run front end and backend via mprocs (`brew install mprocs` may be needed)
-run-all-dev:
-  mprocs "just web-run" "just go-run"
+image_name := 'ghcr.io/astriaorg/eth-faucet'
+default_docker_tag := 'local'
 
+# builds docker image w/ `local` tag by default
+docker-build tag=default_docker_tag:
+  docker buildx build -f ./Dockerfile -t {{image_name}}:{{tag}} .
+
+# runs faucet via docker
+docker-run tag=default_docker_tag:
+  docker run --rm -p 8080:8080 {{image_name}}:{{tag}}
 
 ## Helpers
 
