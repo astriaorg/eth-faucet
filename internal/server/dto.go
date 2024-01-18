@@ -13,7 +13,8 @@ import (
 )
 
 type claimRequest struct {
-	Address string `json:"address"`
+	Address    string `json:"address"`
+	RollupName string `json:"rollupName"`
 }
 
 type claimResponse struct {
@@ -21,9 +22,7 @@ type claimResponse struct {
 }
 
 type infoResponse struct {
-	Account string `json:"account"`
-	Network string `json:"network"`
-	Payout  string `json:"payout"`
+	Payout string `json:"payout"`
 }
 
 type malformedRequest struct {
@@ -88,6 +87,18 @@ func readAddress(r *http.Request) (string, error) {
 	}
 
 	return claimReq.Address, nil
+}
+
+func readClaimRequest(r *http.Request) (claimRequest, error) {
+	var claimReq claimRequest
+	if err := decodeJSONBody(r, &claimReq); err != nil {
+		return claimReq, err
+	}
+	if !chain.IsValidAddress(claimReq.Address, true) {
+		return claimReq, &malformedRequest{status: http.StatusBadRequest, message: "invalid address"}
+	}
+
+	return claimReq, nil
 }
 
 func renderJSON(w http.ResponseWriter, v interface{}, code int) error {

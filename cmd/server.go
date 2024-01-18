@@ -1,24 +1,17 @@
 package cmd
 
 import (
-	"crypto/ecdsa"
-	"errors"
 	"flag"
 	"fmt"
-	"math/big"
 	"os"
 	"os/signal"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/astriaorg/eth-faucet/internal/chain"
 	"github.com/astriaorg/eth-faucet/internal/server"
+	"github.com/astriaorg/eth-faucet/internal/store"
 )
 
 var (
-	appVersion = "v1.1.0"
-	chainIDMap = map[string]int{"goerli": 5, "sepolia": 11155111}
+	appVersion = "v2.0.0"
 
 	httpPortFlag = flag.Int("httpport", 8080, "Listener port to serve HTTP connection")
 	proxyCntFlag = flag.Int("proxycount", 0, "Count of reverse proxies in front of the server")
@@ -29,10 +22,7 @@ var (
 	intervalFlag = flag.Int("faucet.minutes", 1440, "Number of minutes to wait between funding rounds")
 	netnameFlag  = flag.String("faucet.name", "testnet", "Network name to display on the frontend")
 
-	keyJSONFlag  = flag.String("wallet.keyjson", os.Getenv("KEYSTORE"), "Keystore file to fund user requests with")
-	keyPassFlag  = flag.String("wallet.keypass", "password.txt", "Passphrase text file to decrypt keystore")
-	privKeyFlag  = flag.String("wallet.privkey", os.Getenv("PRIVATE_KEY"), "Private key hex to fund user requests with")
-	providerFlag = flag.String("wallet.provider", os.Getenv("WEB3_PROVIDER"), "Endpoint for Ethereum JSON-RPC connection")
+	firestoreProjectID = flag.String("firestoreprojectid", "some-proj-id", "The Firestore project id.")
 )
 
 func init() {
@@ -44,46 +34,19 @@ func init() {
 }
 
 func Execute() {
-	privateKey, err := getPrivateKeyFromFlags()
-	if err != nil {
-		panic(fmt.Errorf("failed to read private key: %w", err))
+	smOpts := &store.NewManagerOpts{
+		ProjectID: *firestoreProjectID,
 	}
-	var chainID *big.Int
-	if value, ok := chainIDMap[strings.ToLower(*netnameFlag)]; ok {
-		chainID = big.NewInt(int64(value))
+	sm, err := store.NewStoreManager(smOpts)
+	if err != nil {
+		fmt.Printf("Failed to create store manager: %v\n", err)
+		os.Exit(1)
 	}
 
-	txBuilder, err := chain.NewTxBuilder(*providerFlag, privateKey, chainID)
-	if err != nil {
-		panic(fmt.Errorf("cannot connect to web3 provider: %w", err))
-	}
 	config := server.NewConfig(*netnameFlag, *httpPortFlag, *intervalFlag, *payoutFlag, *proxyCntFlag, *queueCapFlag)
-	go server.NewServer(txBuilder, config).Run()
+	go server.NewServer(sm, config).Run()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
-}
-
-func getPrivateKeyFromFlags() (*ecdsa.PrivateKey, error) {
-	if *privKeyFlag != "" {
-		hexkey := *privKeyFlag
-		if chain.Has0xPrefix(hexkey) {
-			hexkey = hexkey[2:]
-		}
-		return crypto.HexToECDSA(hexkey)
-	} else if *keyJSONFlag == "" {
-		return nil, errors.New("missing private key or keystore")
-	}
-
-	keyfile, err := chain.ResolveKeyfilePath(*keyJSONFlag)
-	if err != nil {
-		return nil, err
-	}
-	password, err := os.ReadFile(*keyPassFlag)
-	if err != nil {
-		return nil, err
-	}
-
-	return chain.DecryptKeyfile(keyfile, strings.TrimRight(string(password), "\r\n"))
 }

@@ -3,9 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/astriaorg/eth-faucet/internal/store"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/LK4D4/trylock"
 	log "github.com/sirupsen/logrus"
@@ -16,17 +20,17 @@ import (
 )
 
 type Server struct {
-	chain.TxBuilder
 	mutex trylock.Mutex
 	cfg   *Config
 	queue chan string
+	sm    store.RollupStoreManager
 }
 
-func NewServer(builder chain.TxBuilder, cfg *Config) *Server {
+func NewServer(sm store.RollupStoreManager, cfg *Config) *Server {
 	return &Server{
-		TxBuilder: builder,
-		cfg:       cfg,
-		queue:     make(chan string, cfg.queueCap),
+		cfg:   cfg,
+		queue: make(chan string, cfg.queueCap),
+		sm:    sm,
 	}
 }
 
@@ -63,7 +67,15 @@ func (s *Server) consumeQueue() {
 	defer s.mutex.Unlock()
 	for len(s.queue) != 0 {
 		address := <-s.queue
-		txHash, err := s.Transfer(context.Background(), address, chain.EtherToWei(int64(s.cfg.payout)))
+
+		// TODO - need to store the rollup name with the address
+		name := "bugbug-fake-rollup-name"
+		txBuilder, err := s.txBuilderFromRollupName(name)
+		if err != nil {
+			log.WithError(err).Error("Failed to create transaction builder while processing claim in queue")
+		}
+
+		txHash, err := txBuilder.Transfer(context.Background(), address, chain.EtherToWei(int64(s.cfg.payout)))
 		if err != nil {
 			log.WithError(err).Error("Failed to handle transaction in the queue")
 		} else {
@@ -86,27 +98,36 @@ func (s *Server) handleClaim() http.HandlerFunc {
 		address, _ := readAddress(r)
 		// Try to lock mutex if the work queue is empty
 		if len(s.queue) != 0 || !s.mutex.TryLock() {
+			// TODO - need to store the rollup name with the address
 			select {
 			case s.queue <- address:
 				log.WithFields(log.Fields{
 					"address": address,
 				}).Info("Added to queue successfully")
 				resp := claimResponse{Message: fmt.Sprintf("Added %s to the queue", address)}
-				renderJSON(w, resp, http.StatusOK)
+				_ = renderJSON(w, resp, http.StatusOK)
 			default:
 				log.Warn("Max queue capacity reached")
-				renderJSON(w, claimResponse{Message: "Faucet queue is too long, please try again later"}, http.StatusServiceUnavailable)
+				_ = renderJSON(w, claimResponse{Message: "Faucet queue is too long, please try again later"}, http.StatusServiceUnavailable)
 			}
 			return
 		}
 
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
-		txHash, err := s.Transfer(ctx, address, chain.EtherToWei(int64(s.cfg.payout)))
+
+		txBuilder, err := s.txBuilderFromRequest(r)
+		if err != nil {
+			log.WithError(err).Error("Failed to create transaction builder")
+			_ = renderJSON(w, claimResponse{Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
+
+		txHash, err := txBuilder.Transfer(ctx, address, chain.EtherToWei(int64(s.cfg.payout)))
 		s.mutex.Unlock()
 		if err != nil {
 			log.WithError(err).Error("Failed to send transaction")
-			renderJSON(w, claimResponse{Message: err.Error()}, http.StatusInternalServerError)
+			_ = renderJSON(w, claimResponse{Message: err.Error()}, http.StatusInternalServerError)
 			return
 		}
 
@@ -115,7 +136,7 @@ func (s *Server) handleClaim() http.HandlerFunc {
 			"address": address,
 		}).Info("Funded directly successfully")
 		resp := claimResponse{Message: fmt.Sprintf("Txhash: %s", txHash)}
-		renderJSON(w, resp, http.StatusOK)
+		_ = renderJSON(w, resp, http.StatusOK)
 	}
 }
 
@@ -125,10 +146,46 @@ func (s *Server) handleInfo() http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		renderJSON(w, infoResponse{
-			Account: s.Sender().String(),
-			Network: s.cfg.network,
-			Payout:  strconv.Itoa(s.cfg.payout),
+
+		_ = renderJSON(w, infoResponse{
+			Payout: strconv.Itoa(s.cfg.payout),
 		}, http.StatusOK)
 	}
+}
+
+// txBuilderFromRequest creates and returns a TxBuilder from the request
+func (s *Server) txBuilderFromRequest(r *http.Request) (chain.TxBuilder, error) {
+	claimRequest, err := readClaimRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.txBuilderFromRollupName(claimRequest.RollupName)
+}
+
+// txBuilderFromRollupName creates and returns a TxBuilder from the given name
+func (s *Server) txBuilderFromRollupName(name string) (chain.TxBuilder, error) {
+	rollup, err := s.sm.FindRollupByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	hexkey := rollup.PrivateDetails.RollupAccountPrivKey
+	if chain.Has0xPrefix(hexkey) {
+		hexkey = hexkey[2:]
+	}
+
+	privKey, err := crypto.HexToECDSA(hexkey)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO - generate proper rpc url
+	rpcURL := fmt.Sprintf("https://rollups.%v.rpc.blahblah.com", rollup.Name)
+	txBuilder, err := chain.NewTxBuilder(rpcURL, privKey, big.NewInt(int64(rollup.NetworkID)))
+	if err != nil {
+		return nil, err
+	}
+
+	return txBuilder, nil
 }
