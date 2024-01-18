@@ -19,29 +19,32 @@ The faucet is a web application with the goal of distributing small amounts of E
 
 ### Prerequisites
 
-* Go (1.16 or later)
-* Node.js
-* Yarn
+* Go (v1.21)
+* [golangci-lint](https://golangci-lint.run/usage/install/)
+* Node.js (v18)
+* NPM
+* [just](https://github.com/casey/just#installation)
+* [mprocs](https://github.com/pvolok/mprocs#installation) 
 
 ### Installation
 
 1. Clone the repository and navigate to the app’s directory
 ```bash
-git clone https://github.com/chainflag/eth-faucet.git
+git clone https://github.com/astriaorg/eth-faucet.git
 cd eth-faucet
 ```
 
-2. Bundle Frontend web with Vite
+2. Install front end app deps
 ```bash
-go generate
-```
-
-3. Build Go project 
-```bash
-go build -o eth-faucet
+just web-install-deps
 ```
 
 ## Usage
+
+Run front end dev server and Go binary together with `mprocs`
+```bash
+just run-all-dev
+```
 
 **Use private key to fund users**
 

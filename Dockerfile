@@ -2,11 +2,11 @@ FROM node:18-alpine as frontend
 
 WORKDIR /frontend-build
 
-COPY web/package.json web/yarn.lock ./
-RUN yarn install
+COPY web/package.json web/package-lock.json ./
+RUN npm install
 
 COPY web ./
-RUN yarn build
+RUN npm run build
 
 FROM golang:1.21-alpine as backend
 

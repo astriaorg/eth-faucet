@@ -4,19 +4,19 @@ This is the Frontend of [eth-faucet](https://github.com/chainflag/eth-faucet) bu
 
 ## Get started
 
-*Note that you will need to have [Node.js](https://nodejs.org) and [Yarn](https://yarnpkg.com) installed.*
+*Note that you will need to have [Node.js](https://nodejs.org) and [NPM](https://www.npmjs.com/) installed.*
 
 Install the dependencies...
 
 ```bash
 cd web
-yarn install
+npm install
 ```
 
 ...then start [vite](https://vitejs.dev/):
 
 ```bash
-yarn run dev
+npm run dev
 ```
 
 Navigate to [localhost:5173](http://localhost:5173). You should see your app running. Edit a component file in `src`, save it, and reload the page to see your changes.
@@ -24,5 +24,5 @@ Navigate to [localhost:5173](http://localhost:5173). You should see your app run
 To create an optimised version of the app:
 
 ```bash
-yarn run build
+npm run build
 ```

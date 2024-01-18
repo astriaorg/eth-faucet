@@ -1,4 +1,4 @@
-name: Build
+name: Lint, Test, Prettier
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [astria]
 
 jobs:
-  build:
+  server-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,7 +32,7 @@ jobs:
       - name: Test
         run: go test -v ./...
 
-  golangci:
+  server-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -45,16 +45,16 @@ jobs:
         with:
           version: latest
 
-  prettier:
+  web-prettier:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: "14"
+          node-version: "18"
 
-      - run: yarn install
+      - run: npm install
         working-directory: web
 
-      - run: yarn prettier --check 'src/**/*.{css,html,js,svelte}'
+      - run: npm run prettier --check 'src/**/*.{css,html,js,svelte}'
         working-directory: web
