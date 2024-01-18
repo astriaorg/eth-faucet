@@ -24,7 +24,8 @@ The faucet is a web application with the goal of distributing small amounts of E
 * Node.js (v18)
 * NPM
 * [just](https://github.com/casey/just#installation)
-* [mprocs](https://github.com/pvolok/mprocs#installation) 
+* [mprocs](https://github.com/pvolok/mprocs#installation)
+* [watchexec](https://github.com/watchexec/watchexec#install)
 
 ### Installation
 
