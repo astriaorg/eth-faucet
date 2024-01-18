@@ -47,38 +47,7 @@ Run front end dev server and Go binary together with `mprocs`
 just run-all-dev
 ```
 
-**Use private key to fund users**
-
-```bash
-./eth-faucet -httpport 8080 -wallet.provider http://localhost:8545 -wallet.privkey privkey
-```
-
-**Use keystore to fund users**
-
-```bash
-./eth-faucet -httpport 8080 -wallet.provider http://localhost:8545 -wallet.keyjson keystore -wallet.keypass password.txt
-```
-
 ### Configuration
-
-You can configure the funder by using environment variables instead of command-line flags as follows:
-```bash
-export WEB3_PROVIDER=https://some.rpc.endpoint
-export PRIVATE_KEY=0x...
-```
-
-or
-
-```bash
-export WEB3_PROVIDER=https://some.rpc.endpoint
-export KEYSTORE=path/to/keystore
-echo "your keystore password" > `pwd`/password.txt
-```
-
-Then run the faucet application without the wallet command-line flags:
-```bash
-./eth-faucet -httpport 8080
-```
 
 **Optional Flags**
 
@@ -96,19 +65,10 @@ The following are the available command-line flags(excluding above wallet flags)
 ### Docker deployment
 
 ```bash
-docker run -d -p 8080:8080 -e WEB3_PROVIDER=https://some.rpc.endpoint -e PRIVATE_KEY=0x... chainflag/eth-faucet:1.1.0
-```
-
-or
-
-```bash
-docker run -d -p 8080:8080 -e WEB3_PROVIDER=https://some.rpc.endpoint -e KEYSTORE=path/to/keystore -v `pwd`/keystore:/app/keystore -v `pwd`/password.txt:/app/password.txt chainflag/eth-faucet:1.1.0
-```
-
-#### Build the Docker image
-
-```bash
-docker buildx build -t ghcr.io/astriaorg/astria-faucet:0.0.1-local .
+# might need to build image first
+just docker-build
+# run via Docker image
+just docker-run
 ```
 
 ## License

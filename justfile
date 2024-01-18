@@ -1,6 +1,9 @@
 default:
   @just --list
 
+image_name := 'ghcr.io/astriaorg/eth-faucet'
+default_docker_tag := 'local'
+
 # installs developer dependencies for MacOS users with `brew`
 brew-install-dev-deps:
   brew install just
@@ -12,6 +15,14 @@ brew-install-dev-deps:
 build-all:
   go generate -x
   go build -v
+
+# builds docker image w/ `local` tag by default
+docker-build tag=default_docker_tag:
+  docker buildx build -f ./Dockerfile -t {{image_name}}:{{tag}} .
+
+# runs faucet via docker
+docker-run tag=default_docker_tag:
+  docker run --rm -p 8080:8080 {{image_name}}:{{tag}}
 
 # lints the go code
 go-lint:
