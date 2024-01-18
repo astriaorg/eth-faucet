@@ -30,6 +30,6 @@ web-prettier:
 web-run:
   cd web && npm run dev
 
-# run front end and backend via mprocs (`brew install mrpocs` may be needed)
+# run front end and backend via mprocs (`brew install mprocs` may be needed)
 run-all-dev:
   mprocs "just web-run" "just go-run"
