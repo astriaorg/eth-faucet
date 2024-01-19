@@ -18,11 +18,19 @@ type claimRequest struct {
 }
 
 type claimResponse struct {
-	Message string `json:"msg"`
+	Message string `json:"message"`
 }
 
 type infoResponse struct {
-	Payout string `json:"payout"`
+	FundingAddress string `json:"fundingAddress"`
+	NetworkID      uint32 `json:"networkId"`
+	Payout         string `json:"payout"`
+	RollupName     string `json:"rollupName"`
+}
+
+type errorResponse struct {
+	Message string `json:"message"`
+	Status  int    `json:"status"`
 }
 
 type malformedRequest struct {
@@ -75,18 +83,6 @@ func decodeJSONBody(r *http.Request, dst interface{}) error {
 
 	r.Body = io.NopCloser(bytes.NewReader(body))
 	return nil
-}
-
-func readAddress(r *http.Request) (string, error) {
-	var claimReq claimRequest
-	if err := decodeJSONBody(r, &claimReq); err != nil {
-		return "", err
-	}
-	if !chain.IsValidAddress(claimReq.Address, true) {
-		return "", &malformedRequest{status: http.StatusBadRequest, message: "invalid address"}
-	}
-
-	return claimReq.Address, nil
 }
 
 func readClaimRequest(r *http.Request) (claimRequest, error) {

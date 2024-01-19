@@ -22,25 +22,25 @@ import (
 type Server struct {
 	mutex trylock.Mutex
 	cfg   *Config
-	queue chan string
+	queue chan claimRequest
 	sm    store.RollupStoreManager
 }
 
 func NewServer(sm store.RollupStoreManager, cfg *Config) *Server {
 	return &Server{
 		cfg:   cfg,
-		queue: make(chan string, cfg.queueCap),
+		queue: make(chan claimRequest, cfg.queueCap),
 		sm:    sm,
 	}
 }
 
 func (s *Server) setupRouter() *mux.Router {
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 
 	api := r.PathPrefix("/api").Subrouter()
 	limiter := NewLimiter(s.cfg.proxyCount, time.Duration(s.cfg.interval)*time.Minute)
-	api.Handle("/claim", negroni.New(limiter, negroni.Wrap(s.handleClaim())))
-	api.Handle("/info", s.handleInfo())
+	api.Handle("/claim", negroni.New(limiter, negroni.Wrap(s.handleClaim()))).Methods("POST")
+	api.Handle("/info/{rollupName}", s.handleInfo()).Methods("GET")
 
 	fs := http.FileServer(web.Dist())
 
@@ -81,22 +81,20 @@ func (s *Server) consumeQueue() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	for len(s.queue) != 0 {
-		address := <-s.queue
+		claimRequest := <-s.queue
 
-		// TODO - need to store the rollup name with the address
-		name := "bugbug-fake-rollup-name"
-		txBuilder, err := s.txBuilderFromRollupName(name)
+		txBuilder, err := s.txBuilderFromRollupName(claimRequest.RollupName)
 		if err != nil {
 			log.WithError(err).Error("Failed to create transaction builder while processing claim in queue")
 		}
 
-		txHash, err := txBuilder.Transfer(context.Background(), address, chain.EtherToWei(int64(s.cfg.payout)))
+		txHash, err := txBuilder.Transfer(context.Background(), claimRequest.Address, chain.EtherToWei(int64(s.cfg.payout)))
 		if err != nil {
 			log.WithError(err).Error("Failed to handle transaction in the queue")
 		} else {
 			log.WithFields(log.Fields{
 				"txHash":  txHash,
-				"address": address,
+				"address": claimRequest.Address,
 			}).Info("Consume from queue successfully")
 		}
 	}
@@ -104,22 +102,18 @@ func (s *Server) consumeQueue() {
 
 func (s *Server) handleClaim() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			http.NotFound(w, r)
-			return
-		}
-
 		// The error always be nil since it has already been handled in limiter
-		address, _ := readAddress(r)
+		claimRequest, _ := readClaimRequest(r)
 		// Try to lock mutex if the work queue is empty
 		if len(s.queue) != 0 || !s.mutex.TryLock() {
 			// TODO - need to store the rollup name with the address
 			select {
-			case s.queue <- address:
+			case s.queue <- claimRequest:
 				log.WithFields(log.Fields{
-					"address": address,
+					"address":    claimRequest.Address,
+					"rollupName": claimRequest.RollupName,
 				}).Info("Added to queue successfully")
-				resp := claimResponse{Message: fmt.Sprintf("Added %s to the queue", address)}
+				resp := claimResponse{Message: fmt.Sprintf("Added %s to the queue", claimRequest.Address)}
 				_ = renderJSON(w, resp, http.StatusOK)
 			default:
 				log.Warn("Max queue capacity reached")
@@ -138,7 +132,7 @@ func (s *Server) handleClaim() http.HandlerFunc {
 			return
 		}
 
-		txHash, err := txBuilder.Transfer(ctx, address, chain.EtherToWei(int64(s.cfg.payout)))
+		txHash, err := txBuilder.Transfer(ctx, claimRequest.Address, chain.EtherToWei(int64(s.cfg.payout)))
 		s.mutex.Unlock()
 		if err != nil {
 			log.WithError(err).Error("Failed to send transaction")
@@ -148,22 +142,47 @@ func (s *Server) handleClaim() http.HandlerFunc {
 
 		log.WithFields(log.Fields{
 			"txHash":  txHash,
-			"address": address,
+			"address": claimRequest.Address,
 		}).Info("Funded directly successfully")
 		resp := claimResponse{Message: fmt.Sprintf("Txhash: %s", txHash)}
 		_ = renderJSON(w, resp, http.StatusOK)
 	}
 }
 
+// handleInfo returns some details of the rollup.
+// It fetches data from Firestore and returns it as JSON.
 func (s *Server) handleInfo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.NotFound(w, r)
+		vars := mux.Vars(r)
+		rollupName := vars["rollupName"]
+
+		isValid := store.IsRollupNameValid(rollupName)
+		if !isValid {
+			msg := fmt.Sprintf("Invalid rollup name: %v", rollupName)
+			log.Warn(msg)
+			_ = renderJSON(w, errorResponse{Message: msg, Status: http.StatusBadRequest}, http.StatusBadRequest)
+			return
+		}
+
+		rDoc, err := s.sm.FindRollupByName(rollupName)
+		if err != nil {
+			log.WithError(err).Warn("Failed to find rollup by name")
+			_ = renderJSON(w, errorResponse{Message: err.Error(), Status: http.StatusInternalServerError}, http.StatusInternalServerError)
+			return
+		}
+
+		if rDoc.Status != store.StatusDeployed {
+			msg := "Rollup is not deployed"
+			log.Warnf("%v: %v", msg, rDoc)
+			_ = renderJSON(w, errorResponse{Message: "msg", Status: http.StatusInternalServerError}, http.StatusInternalServerError)
 			return
 		}
 
 		_ = renderJSON(w, infoResponse{
-			Payout: strconv.Itoa(s.cfg.payout),
+			Payout:         strconv.Itoa(s.cfg.payout),
+			FundingAddress: rDoc.RollupAccountAddress,
+			RollupName:     rDoc.Name,
+			NetworkID:      rDoc.NetworkID,
 		}, http.StatusOK)
 	}
 }
@@ -175,6 +194,10 @@ func (s *Server) txBuilderFromRequest(r *http.Request) (chain.TxBuilder, error) 
 		return nil, err
 	}
 
+	log.WithFields(log.Fields{
+		"address":    claimRequest.Address,
+		"rollupName": claimRequest.RollupName,
+	}).Info("Received claim request")
 	return s.txBuilderFromRollupName(claimRequest.RollupName)
 }
 
@@ -182,6 +205,7 @@ func (s *Server) txBuilderFromRequest(r *http.Request) (chain.TxBuilder, error) 
 func (s *Server) txBuilderFromRollupName(name string) (chain.TxBuilder, error) {
 	rollup, err := s.sm.FindRollupByName(name)
 	if err != nil {
+		err = fmt.Errorf("failed to find rollup by name: %w", err)
 		return nil, err
 	}
 
@@ -192,6 +216,7 @@ func (s *Server) txBuilderFromRollupName(name string) (chain.TxBuilder, error) {
 
 	privKey, err := crypto.HexToECDSA(hexkey)
 	if err != nil {
+		err = fmt.Errorf("failed to parse private key: %w", err)
 		return nil, err
 	}
 

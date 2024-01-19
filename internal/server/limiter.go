@@ -32,7 +32,7 @@ func NewLimiter(proxyCount int, ttl time.Duration) *Limiter {
 }
 
 func (l *Limiter) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	address, err := readAddress(r)
+	claimRequest, err := readClaimRequest(r)
 	if err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
@@ -50,22 +50,22 @@ func (l *Limiter) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.Ha
 
 	clintIP := getClientIPFromRequest(l.proxyCount, r)
 	l.mutex.Lock()
-	if l.limitByKey(w, address) || l.limitByKey(w, clintIP) {
+	if l.limitByKey(w, claimRequest.Address) || l.limitByKey(w, clintIP) {
 		l.mutex.Unlock()
 		return
 	}
-	l.cache.SetWithTTL(address, true, l.ttl)
+	l.cache.SetWithTTL(claimRequest.Address, true, l.ttl)
 	l.cache.SetWithTTL(clintIP, true, l.ttl)
 	l.mutex.Unlock()
 
 	next.ServeHTTP(w, r)
 	if w.(negroni.ResponseWriter).Status() != http.StatusOK {
-		l.cache.Remove(address)
+		l.cache.Remove(claimRequest.Address)
 		l.cache.Remove(clintIP)
 		return
 	}
 	log.WithFields(log.Fields{
-		"address":  address,
+		"address":  claimRequest.Address,
 		"clientIP": clintIP,
 	}).Info("Maximum request limit has been reached")
 }

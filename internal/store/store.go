@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"regexp"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
@@ -55,10 +56,14 @@ const (
 )
 
 type RollupDoc struct {
-	Name           string               `firestore:"name"`
-	NetworkID      uint32               `firestore:"networkId"`
-	Status         RollupDocumentStatus `firestore:"status"`
-	PrivateDetails RollupPrivateDoc     `firestore:"private"`
+	ID        string               `firestore:"id"`
+	Name      string               `firestore:"name"`
+	NetworkID uint32               `firestore:"networkId"`
+	Status    RollupDocumentStatus `firestore:"status"`
+
+	RollupPublicDetails
+	// FIXME - private isn't a field on the doc but is another collection, so this won't work
+	PrivateDetails RollupPrivateDoc `firestore:"private"`
 }
 
 type RollupPrivateDoc struct {
@@ -77,21 +82,38 @@ type RollupPublicDetails struct {
 func (m *Manager) FindRollupByName(name string) (RollupDoc, error) {
 	ctx := context.Background()
 
-	iter := m.client.Collection(m.rollupsCollection).Where("name", "==", name).Documents(ctx)
+	iter := m.client.CollectionGroup(m.rollupsCollection).Where("name", "==", name).Documents(ctx)
 	defer iter.Stop()
-	var rollup RollupDoc
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {
-			break
+			return RollupDoc{}, errors.New("rollup not found")
 		}
 		if err != nil {
 			return RollupDoc{}, err
 		}
+
+		var rollup RollupDoc
 		err = doc.DataTo(&rollup)
 		if err != nil {
 			return RollupDoc{}, err
 		}
+		if rollup.Name != "" {
+			rollup.ID = doc.Ref.ID
+			return rollup, nil
+		}
 	}
-	return rollup, nil
+}
+
+// IsRollupNameValid checks against a regex to ensure the rollup name is valid
+func IsRollupNameValid(name string) bool {
+	pattern := "^[a-z]+[a-z0-9]*(?:-[a-z0-9]+)*$"
+	matched, err := regexp.MatchString(pattern, name)
+	if err != nil {
+		return false
+	}
+	if !matched {
+		return false
+	}
+	return true
 }
