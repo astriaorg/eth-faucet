@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/LK4D4/trylock"
 	"github.com/astriaorg/eth-faucet/internal/store"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/LK4D4/trylock"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
@@ -34,14 +34,29 @@ func NewServer(sm store.RollupStoreManager, cfg *Config) *Server {
 	}
 }
 
-func (s *Server) setupRouter() *http.ServeMux {
-	router := http.NewServeMux()
-	router.Handle("/", http.FileServer(web.Dist()))
-	limiter := NewLimiter(s.cfg.proxyCount, time.Duration(s.cfg.interval)*time.Minute)
-	router.Handle("/api/claim", negroni.New(limiter, negroni.Wrap(s.handleClaim())))
-	router.Handle("/api/info", s.handleInfo())
+func (s *Server) setupRouter() *mux.Router {
+	r := mux.NewRouter()
 
-	return router
+	api := r.PathPrefix("/api").Subrouter()
+	limiter := NewLimiter(s.cfg.proxyCount, time.Duration(s.cfg.interval)*time.Minute)
+	api.Handle("/claim", negroni.New(limiter, negroni.Wrap(s.handleClaim())))
+	api.Handle("/info", s.handleInfo())
+
+	fs := http.FileServer(web.Dist())
+
+	// NOTE - serving static files from /static allows us to handle wildcard routes properly.
+	//  requires vite.config.js `base` property to be set to the same pattern as below.
+	// NOTE - rollup names don't support `_`, so using uncommon name `static_assets`
+	r.PathPrefix("/static_assets").Handler(http.StripPrefix("/static_assets", fs))
+
+	// serve the svelte app, via the filesystem, for any other route
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// NOTE - http.FS has the same paths as the filesystem. if we didn't strip
+		//  the path, then it would try to find a file with the same name as the path
+		http.StripPrefix(r.URL.Path, fs).ServeHTTP(w, r)
+	})
+
+	return r
 }
 
 func (s *Server) Run() {
