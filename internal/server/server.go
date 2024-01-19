@@ -191,13 +191,10 @@ func (s *Server) handleInfo() http.HandlerFunc {
 func (s *Server) txBuilderFromRequest(r *http.Request) (chain.TxBuilder, error) {
 	claimRequest, err := readClaimRequest(r)
 	if err != nil {
+		err = fmt.Errorf("failed to read claim request: %w", err)
 		return nil, err
 	}
 
-	log.WithFields(log.Fields{
-		"address":    claimRequest.Address,
-		"rollupName": claimRequest.RollupName,
-	}).Info("Received claim request")
 	return s.txBuilderFromRollupName(claimRequest.RollupName)
 }
 
