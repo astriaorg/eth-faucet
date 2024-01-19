@@ -3,6 +3,7 @@ package chain
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -10,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	log "github.com/sirupsen/logrus"
 )
 
 type TxBuilder interface {
@@ -25,6 +27,12 @@ type TxBuild struct {
 }
 
 func NewTxBuilder(provider string, privateKey *ecdsa.PrivateKey, chainID *big.Int) (TxBuilder, error) {
+	log.WithFields(log.Fields{
+		"provider": provider,
+		"chainID":  chainID,
+		"private":  privateKey,
+	}).Info("creating new tx builder")
+
 	client, err := ethclient.Dial(provider)
 	if err != nil {
 		return nil, err
@@ -52,12 +60,14 @@ func (b *TxBuild) Sender() common.Address {
 func (b *TxBuild) Transfer(ctx context.Context, to string, value *big.Int) (common.Hash, error) {
 	nonce, err := b.client.PendingNonceAt(ctx, b.Sender())
 	if err != nil {
+		err = fmt.Errorf("could not get pending nonce: %v", err)
 		return common.Hash{}, err
 	}
 
 	gasLimit := uint64(21000)
 	gasPrice, err := b.client.SuggestGasPrice(ctx)
 	if err != nil {
+		err = fmt.Errorf("could not suggest gas price: %v", err)
 		return common.Hash{}, err
 	}
 
@@ -72,6 +82,7 @@ func (b *TxBuild) Transfer(ctx context.Context, to string, value *big.Int) (comm
 
 	signedTx, err := types.SignTx(unsignedTx, b.signer, b.privateKey)
 	if err != nil {
+		err = fmt.Errorf("could not sign tx: %v", err)
 		return common.Hash{}, err
 	}
 

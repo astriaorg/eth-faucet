@@ -17,7 +17,7 @@ web-install-deps:
 # runs the full web app. generates the front end app before starting the server.
 run:
   go generate -x
-  go run -v ./... -httpport 8080 -firestoreprojectid $FIRESTORE_PROJECT_ID
+  go run -v ./... -httpport 8089 -firestoreprojectid $FIRESTORE_PROJECT_ID
 
 # run cli and restart when code changes
 run-watch:

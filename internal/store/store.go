@@ -11,6 +11,7 @@ import (
 
 type RollupStoreManager interface {
 	FindRollupByName(name string) (RollupDoc, error)
+	RollupByNameWithPrivate(name string) (RollupDoc, error)
 }
 
 type Manager struct {
@@ -62,8 +63,7 @@ type RollupDoc struct {
 	Status    RollupDocumentStatus `firestore:"status"`
 
 	RollupPublicDetails
-	// FIXME - private isn't a field on the doc but is another collection, so this won't work
-	PrivateDetails RollupPrivateDoc `firestore:"private"`
+	PrivateDetails RollupPrivateDoc
 }
 
 type RollupPrivateDoc struct {
@@ -80,28 +80,59 @@ type RollupPublicDetails struct {
 
 // FindRollupByName queries the store to find a rollup with the given name
 func (m *Manager) FindRollupByName(name string) (RollupDoc, error) {
+	snapshot, err := m.RollupDocSnapshotByName(name)
+	if err != nil {
+		return RollupDoc{}, err
+	}
+
+	var rollup RollupDoc
+	if err := snapshot.DataTo(&rollup); err != nil {
+		return RollupDoc{}, err
+	}
+	rollup.ID = snapshot.Ref.ID
+	return rollup, nil
+}
+
+// RollupByNameWithPrivate finds a rollup by name and returns it along with its private details
+func (m *Manager) RollupByNameWithPrivate(name string) (RollupDoc, error) {
+	snapshot, err := m.RollupDocSnapshotByName(name)
+	if err != nil {
+		return RollupDoc{}, err
+	}
+	var rollup RollupDoc
+	if err := snapshot.DataTo(&rollup); err != nil {
+		return RollupDoc{}, err
+	}
+
+	privateDoc, err := snapshot.Ref.Collection(m.rollupPrivateCollection).Doc(m.rollupPrivateDoc).Get(context.Background())
+	if err != nil {
+		return RollupDoc{}, err
+	}
+	var priv RollupPrivateDoc
+	if err := privateDoc.DataTo(&priv); err != nil {
+		return RollupDoc{}, err
+	}
+
+	rollup.ID = snapshot.Ref.ID
+	rollup.PrivateDetails = priv
+	return rollup, nil
+}
+
+// RollupDocSnapshotByName queries the store to find a rollup with the given name
+func (m *Manager) RollupDocSnapshotByName(name string) (*firestore.DocumentSnapshot, error) {
 	ctx := context.Background()
 
-	iter := m.client.CollectionGroup(m.rollupsCollection).Where("name", "==", name).Documents(ctx)
+	iter := m.client.CollectionGroup(m.rollupsCollection).Where("name", "==", name).Where("status", "==", StatusDeployed).Documents(ctx)
 	defer iter.Stop()
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {
-			return RollupDoc{}, errors.New("rollup not found")
+			return nil, errors.New("rollup not found")
 		}
 		if err != nil {
-			return RollupDoc{}, err
+			return nil, err
 		}
-
-		var rollup RollupDoc
-		err = doc.DataTo(&rollup)
-		if err != nil {
-			return RollupDoc{}, err
-		}
-		if rollup.Name != "" {
-			rollup.ID = doc.Ref.ID
-			return rollup, nil
-		}
+		return doc, nil
 	}
 }
 

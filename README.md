@@ -55,7 +55,7 @@ The following are the available command-line flags(excluding above wallet flags)
 
 | Flag            | Description                                      | Default Value  |
 |-----------------|--------------------------------------------------|----------------|
-| -httpport       | Listener port to serve HTTP connection           | 8080           |
+| -httpport       | Listener port to serve HTTP connection           | 8089           |
 | -proxycount     | Count of reverse proxies in front of the server  | 0              |
 | -queuecap       | Maximum transactions waiting to be sent          | 100            |
 | -faucet.amount  | Number of Ethers to transfer per user request    | 1              |

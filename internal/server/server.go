@@ -200,7 +200,7 @@ func (s *Server) txBuilderFromRequest(r *http.Request) (chain.TxBuilder, error) 
 
 // txBuilderFromRollupName creates and returns a TxBuilder from the given name
 func (s *Server) txBuilderFromRollupName(name string) (chain.TxBuilder, error) {
-	rollup, err := s.sm.FindRollupByName(name)
+	rollup, err := s.sm.RollupByNameWithPrivate(name)
 	if err != nil {
 		err = fmt.Errorf("failed to find rollup by name: %w", err)
 		return nil, err
@@ -217,8 +217,8 @@ func (s *Server) txBuilderFromRollupName(name string) (chain.TxBuilder, error) {
 		return nil, err
 	}
 
-	// TODO - generate proper rpc url
-	rpcURL := fmt.Sprintf("https://rollups.%v.rpc.blahblah.com", rollup.Name)
+	// FIXME - generate url from template string passed in as flag?
+	rpcURL := fmt.Sprintf("http://%v.rpc.localdev.me", rollup.Name)
 	txBuilder, err := chain.NewTxBuilder(rpcURL, privKey, big.NewInt(int64(rollup.NetworkID)))
 	if err != nil {
 		return nil, err

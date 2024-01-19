@@ -13,7 +13,7 @@ import (
 var (
 	appVersion = "v2.0.0"
 
-	httpPortFlag = flag.Int("httpport", 8080, "Listener port to serve HTTP connection")
+	httpPortFlag = flag.Int("httpport", 8089, "Listener port to serve HTTP connection")
 	proxyCntFlag = flag.Int("proxycount", 0, "Count of reverse proxies in front of the server")
 	queueCapFlag = flag.Int("queuecap", 100, "Maximum transactions waiting to be sent")
 	versionFlag  = flag.Bool("version", false, "Print version number")
@@ -33,6 +33,7 @@ func init() {
 	}
 }
 
+// Execute creates a store manager and server, then runs the server.
 func Execute() {
 	smOpts := &store.NewManagerOpts{
 		ProjectID: *firestoreProjectID,
