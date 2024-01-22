@@ -44,7 +44,7 @@ func (s *Server) setupRouter() *mux.Router {
 
 	fs := http.FileServer(web.Dist())
 
-	// NOTE - serving static files from /static allows us to handle wildcard routes properly.
+	// NOTE - serving static files from /static_assets allows us to handle wildcard routes properly.
 	//  requires vite.config.js `base` property to be set to the same pattern as below.
 	// NOTE - rollup names don't support `_`, so using uncommon name `static_assets`
 	r.PathPrefix("/static_assets").Handler(http.StripPrefix("/static_assets", fs))
