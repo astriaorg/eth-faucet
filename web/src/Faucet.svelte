@@ -1,11 +1,17 @@
-<script lang="ts">
-  import { onMount } from 'svelte'
-  import { getAddress } from '@ethersproject/address'
-  import { CloudflareProvider } from '@ethersproject/providers'
-  import { setDefaults as setToast, toast, ToastType } from 'bulma-toast'
-  import { ClaimRequest, getResData } from './api'
+<script lang="ts" context="module">
+  import { setDefaults as setToast } from 'bulma-toast'
 
+  // config
+  document.title = `RIA Faucet`
+  setToast({
+    position: 'bottom-center',
+    dismissible: true,
+    pauseOnHover: true,
+    closeOnClick: false,
+    animate: { in: 'fadeIn', out: 'fadeOut' },
+  })
 
+  // types
   type FaucetInfo = {
     fundingAddress: string
     rollupName: string
@@ -13,16 +19,9 @@
     payout: number
   }
 
-  let input = null
-  let faucetInfo: FaucetInfo = {
-    fundingAddress: '',
-    rollupName: '',
-    network: 'testnet',
-    payout: 1,
-  }
+  // utils
 
-  $: document.title = `RIA Faucet`
-
+  // get the rollup name from the url path, e.g. the burger in faucet.hostname.com/burger
   function getRollupNameFromPath(): string {
     let path = window.location.pathname
     if (path[0] === '/') {
@@ -37,14 +36,23 @@
     }
     return path
   }
+</script>
 
-  setToast({
-    position: 'bottom-center',
-    dismissible: true,
-    pauseOnHover: true,
-    closeOnClick: false,
-    animate: { in: 'fadeIn', out: 'fadeOut' },
-  })
+<script lang="ts">
+  import { onMount } from 'svelte'
+  import { getAddress } from '@ethersproject/address'
+  import { CloudflareProvider } from '@ethersproject/providers'
+  import { toast, ToastType } from 'bulma-toast'
+  import { ClaimRequest, getResData } from './api'
+
+
+  let input = null
+  let faucetInfo: FaucetInfo = {
+    fundingAddress: '',
+    rollupName: '',
+    network: 'testnet',
+    payout: 1,
+  }
 
   onMount(async () => {
     if (window.location.pathname === '/') {
