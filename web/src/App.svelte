@@ -1,7 +1,10 @@
 <script>
   import 'animate.css';
   import 'bulma/css/bulma.css';
+  import { Router, Link, Route } from "svelte-routing";
   import Faucet from './Faucet.svelte';
+  import Rollups from './Rollups.svelte'
+  export let url = "";
 </script>
 
 <svelte:head>
@@ -11,4 +14,9 @@
   />
 </svelte:head>
 
-<Faucet />
+<Router {url}>
+  <div>
+    <Route path="/:rollupName"><Faucet /></Route>
+    <Route path="/"><Rollups /></Route>
+  </div>
+</Router>

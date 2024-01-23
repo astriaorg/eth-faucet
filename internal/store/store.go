@@ -10,6 +10,7 @@ import (
 )
 
 type RollupStoreManager interface {
+	Rollups() ([]RollupDoc, error)
 	FindRollupByName(name string) (RollupDoc, error)
 	RollupByNameWithPrivate(name string) (RollupDoc, error)
 }
@@ -57,10 +58,10 @@ const (
 )
 
 type RollupDoc struct {
-	ID        string               `firestore:"id"`
-	Name      string               `firestore:"name"`
-	NetworkID uint32               `firestore:"networkId"`
-	Status    RollupDocumentStatus `firestore:"status"`
+	ID        string               `firestore:"id" json:"id"`
+	Name      string               `firestore:"name" json:"name"`
+	NetworkID uint32               `firestore:"networkId" json:"networkId"`
+	Status    RollupDocumentStatus `firestore:"status" json:"status"`
 
 	RollupPublicDetails
 	PrivateDetails RollupPrivateDoc
@@ -72,10 +73,38 @@ type RollupPrivateDoc struct {
 }
 
 type RollupPublicDetails struct {
-	RollupAccountAddress      string `firestore:"rollupAccountAddress"`
-	RollupAccountPublicKey    string `firestore:"rollupAccountPublicKey"`
-	SequencerAccountAddress   string `firestore:"sequencerAccountAddress"`
-	SequencerAccountPublicKey string `firestore:"sequencerAccountPublicKey"`
+	RollupAccountAddress      string `firestore:"rollupAccountAddress" json:"rollupAccountAddress"`
+	RollupAccountPublicKey    string `firestore:"rollupAccountPublicKey" json:"rollupAccountPublicKey"`
+	SequencerAccountAddress   string `firestore:"sequencerAccountAddress" json:"sequencerAccountAddress"`
+	SequencerAccountPublicKey string `firestore:"sequencerAccountPublicKey" json:"sequencerAccountPublicKey"`
+}
+
+// Rollups queries the store to find all deployed rollups
+func (m *Manager) Rollups() ([]RollupDoc, error) {
+	ctx := context.Background()
+
+	iter := m.client.CollectionGroup(m.rollupsCollection).Where("status", "==", StatusDeployed).Documents(ctx)
+	defer iter.Stop()
+
+	var rollups []RollupDoc
+	for {
+		doc, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return []RollupDoc{}, err
+		}
+
+		var rollup RollupDoc
+		if err := doc.DataTo(&rollup); err != nil {
+			return []RollupDoc{}, err
+		}
+		rollup.ID = doc.Ref.ID
+		rollups = append(rollups, rollup)
+	}
+
+	return rollups, nil
 }
 
 // FindRollupByName queries the store to find a rollup with the given name
