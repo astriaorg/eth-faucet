@@ -115,39 +115,6 @@
 
 <main>
     <section class="hero is-info is-fullheight">
-        <div class="hero-head">
-            <nav class="navbar">
-                <div class="container">
-                    <div class="navbar-brand">
-                        <a
-                                class="navbar-item is-white"
-                                href="https://astria.org"
-                                target="_blank"
-                        >
-                            <span><b>Astria</b></span>
-                        </a>
-                    </div>
-
-                    <div id="navbarMenu" class="navbar-menu">
-                        <div class="navbar-end">
-              <span class="navbar-item">
-                <a
-                        class="button is-white is-outlined"
-                        href="https://github.com/astriaorg/eth-faucet"
-                        target="_blank"
-                >
-                  <span class="icon">
-                    <i class="fa fa-github"/>
-                  </span>
-                  <span>View Source</span>
-                </a>
-              </span>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-        </div>
-
         <div class="hero-body">
             <div class="container has-text-centered">
                 <div class="column is-6 is-offset-3">
@@ -192,10 +159,6 @@
         background-size: cover;
     }
 
-    .hero.is-info a.navbar-item:hover {
-        background-color: transparent;
-    }
-
     .hero .subtitle {
         padding: 3rem 0;
         line-height: 1.5;
@@ -204,9 +167,5 @@
     .box {
         border-radius: 0;
         background: transparent;
-    }
-
-    .button {
-        border-radius: 0;
     }
 </style>

@@ -1,0 +1,49 @@
+@import './astria-colors';
+
+.button.is-square {
+    border-radius: 0;
+}
+
+.button.has-gradient-to-right-orange {
+  @include astria-button-gradient;
+}
+
+.button.is-tall {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+.button.is-taller {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+.button.is-wide {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+.button.is-wider {
+  padding-left: 4rem;
+  padding-right: 4rem;
+}
+
+.button.is-ghost {
+
+  &.is-outlined-light {
+    border-color: $astria-white;
+    &:disabled {
+        background-color: transparent;
+        border-color: $astria-white;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+  }
+
+  &:hover, &.is-hovered {
+    // this selector should be specific enough to override bulma's default,
+    // but for some reason !important was necessary here
+    text-decoration: none !important;
+  }
+
+  &:focus, &.is-focused {
+    box-shadow: none;
+  }
+}

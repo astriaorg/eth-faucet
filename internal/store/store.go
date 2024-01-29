@@ -83,7 +83,10 @@ type RollupPublicDetails struct {
 func (m *Manager) Rollups() ([]RollupDoc, error) {
 	ctx := context.Background()
 
-	iter := m.client.CollectionGroup(m.rollupsCollection).Where("status", "==", StatusDeployed).Documents(ctx)
+	iter := m.client.CollectionGroup(m.rollupsCollection).
+		Where("status", "==", StatusDeployed).
+		OrderBy("name", firestore.Asc).
+		Documents(ctx)
 	defer iter.Stop()
 
 	var rollups []RollupDoc

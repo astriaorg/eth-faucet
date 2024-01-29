@@ -40,50 +40,21 @@
 
 <main>
     <section class="hero is-info is-fullheight">
-        <div class="hero-head">
-            <nav class="navbar">
-                <div class="container">
-                    <div class="navbar-brand">
-                        <a
-                                class="navbar-item is-white"
-                                href="https://astria.org"
-                                target="_blank"
-                        >
-                            <span><b>Astria</b></span>
-                        </a>
-                    </div>
-
-                    <div id="navbarMenu" class="navbar-menu">
-                        <div class="navbar-end">
-              <span class="navbar-item">
-                <a
-                        class="button is-white is-outlined"
-                        href="https://github.com/astriaorg/eth-faucet"
-                        target="_blank"
-                >
-                  <span class="icon">
-                    <i class="fa fa-github"/>
-                  </span>
-                  <span>View Source</span>
-                </a>
-              </span>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-        </div>
-
         <div class="hero-body">
             <div class="container has-text-centered">
                 <div class="column is-6 is-offset-3">
                     {#each rollups as rollup}
-                        <div class="box">
-                            <h1 class="title">
-                                {rollup.name}
-                            </h1>
-                            <h2 class="subtitle">
-                                <a href="/faucet/{rollup.chainId}">Get Testnet Tokens</a>
-                            </h2>
+                        <div class="card p-5">
+                            <header class="card-header">
+                                <p class="card-header-title is-size-5 has-text-weight-normal has-text-light">
+                                    {rollup.name}
+                                </p>
+                            </header>
+                            <div class="card-content p-4">
+                                <button class="button is-ghost is-outlined-light">
+                                    <a href="/{rollup.name}">Get Testnet Tokens</a>
+                                </button>
+                            </div>
                         </div>
                     {/each}
                 </div>
@@ -99,23 +70,5 @@
         -moz-background-size: cover;
         -o-background-size: cover;
         background-size: cover;
-    }
-
-    .hero.is-info a.navbar-item:hover {
-        background-color: transparent;
-    }
-
-    .hero .subtitle {
-        padding: 3rem 0;
-        line-height: 1.5;
-    }
-
-    .box {
-        border-radius: 0;
-        background: transparent;
-    }
-
-    .button {
-        border-radius: 0;
     }
 </style>

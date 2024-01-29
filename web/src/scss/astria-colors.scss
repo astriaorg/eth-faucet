@@ -1,0 +1,61 @@
+// astria colors
+$astria-white: #f5f5f5;
+$astria-whitest: #fff;
+$astria-grey-dark: #333;
+$astria-grey-light: hsl(0, 0%, 60%);
+$astria-black: hsl(203deg 45% 4%);
+$astria-red: #BB3631;
+$astria-orange: #df5822;
+$astria-orange-soft: #f09226;
+$astria-green: #3B7D4F;
+$astria-blue-light: #74A4BF;
+$astria-yellow: #E0B74A;
+
+$success: $astria-green;
+$info: $astria-blue-light;
+$warning: $astria-yellow;
+$danger: $astria-red;
+
+$astria-error-lighter: #f8d7da;
+$astria-error-light: #f5c6cb;
+$astria-error-dark: #721c24;
+
+$astria-text-light: $astria-white;
+$astria-text-dark: $astria-grey-dark;
+
+// general color overrides
+$body-background-color: $astria-black;
+$text: $astria-text-light;
+$link: $astria-white;
+$link-hover: $astria-whitest;
+
+// navbar colors
+$navbar-item-hover-color: $astria-text-dark;
+$navbar-item-hover-background-color: $astria-orange-soft;
+
+
+// gradient mixins
+@mixin astria-bg-gradient {
+  background: linear-gradient(to right, $astria-orange-soft, $astria-orange);
+}
+
+@mixin astria-border-gradient {
+  border-image: linear-gradient(to right, $astria-orange-soft, $astria-orange) 1;
+}
+
+@mixin astria-button-gradient {
+  @include astria-bg-gradient;
+  border: none;
+  @include astria-border-gradient;
+}
+
+@mixin astria-bottom-border-gradient {
+  background: linear-gradient(
+                  to right,
+                  $astria-orange-soft,
+                  50%,
+                  $astria-orange,
+  ) left bottom no-repeat;
+  background-size: 100% 5px;
+  border-radius: 0;
+}

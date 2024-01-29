@@ -1,0 +1,48 @@
+@import './astria-colors';
+
+.error-card {
+  background-color: $astria-error-lighter;
+  border-color: $astria-error-light;
+  color: $astria-error-dark;
+
+  * {
+    color: $astria-error-dark;
+  }
+}
+
+.card {
+  &.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  a.disabled {
+    pointer-events: none;
+  }
+
+  //background-color: $astria-black;
+  background: radial-gradient(144.23% 141.13% at 50.15% 0%, #221F1F 0%, #050A0D 100%);
+  box-shadow: 1px 1px 1px -1px hsla(0, 0%, 100%, 0.5) inset;
+  //padding: 3rem 1.5rem;
+
+  &.is-fuzzy-bottomed {
+    background: radial-gradient(100% 100% at 50.15% 0%, #221F1F 0%, #050A0D 100%);
+  }
+
+  .card-content {
+    .is-ghost {
+      &:hover, &.is-hovered {
+        text-decoration: none;
+      }
+
+      &:focus, &.is-focused {
+        box-shadow: none;
+      }
+    }
+  }
+
+  .card-footer {
+    border-top: none;
+    box-shadow: none;
+  }
+}
