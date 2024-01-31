@@ -41,6 +41,7 @@ func (s *Server) setupRouter() *mux.Router {
 	limiter := NewLimiter(s.cfg.proxyCount, time.Duration(s.cfg.interval)*time.Minute)
 	api.Handle("/claim", negroni.New(limiter, negroni.Wrap(s.handleClaim()))).Methods("POST")
 	api.Handle("/info/{rollupName}", s.handleInfo()).Methods("GET")
+	api.Handle("/rollups", s.handleRollups()).Methods("GET")
 
 	fs := http.FileServer(web.Dist())
 
@@ -184,6 +185,20 @@ func (s *Server) handleInfo() http.HandlerFunc {
 			RollupName:     rDoc.Name,
 			NetworkID:      rDoc.NetworkID,
 		}, http.StatusOK)
+	}
+}
+
+// handleRollups returns all deployed rollups
+func (s *Server) handleRollups() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rollups, err := s.sm.Rollups()
+		if err != nil {
+			log.WithError(err).Error("Failed to get rollups")
+			_ = renderJSON(w, errorResponse{Message: err.Error(), Status: http.StatusInternalServerError}, http.StatusInternalServerError)
+			return
+		}
+
+		_ = renderJSON(w, rollups, http.StatusOK)
 	}
 }
 

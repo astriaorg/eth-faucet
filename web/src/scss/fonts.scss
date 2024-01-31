@@ -1,0 +1,11 @@
+// customizations for bulma
+$family-sans-serif: 'NB Akademie', sans-serif;
+$family-monospace: 'NB Akademie Mono', monospace;
+
+p {
+  letter-spacing: -0.02em;
+}
+
+h1, h2, h3, .button {
+  letter-spacing: -.05em;
+}

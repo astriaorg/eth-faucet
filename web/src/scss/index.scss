@@ -1,0 +1,120 @@
+html, body {
+  height: 100vh;
+}
+
+// fonts
+@import './fonts';
+
+// astria bulma overrides
+// NOTE - scss variable overrides be imported BEFORE bulma so that the overriden variables are
+// used in the bulma sass
+@import 'astria-colors';
+@import 'button-overrides';
+@import 'card-overrides';
+@import 'form-overrides';
+
+// bulma
+@import '../../node_modules/bulma/bulma';
+@import '../../node_modules/bulma/sass/utilities/initial-variables';
+@import '../../node_modules/bulma/sass/components/navbar';
+
+// NOTE - these css customizations must be imported AFTER bulma to override the css classes
+@import 'button-customizations';
+@import 'card-customizations';
+@import 'form-customizations';
+
+// body reset
+body {
+  margin: 0;
+  padding: 0;
+  background-color: $astria-black;
+}
+
+// navbar customizations
+.navbar {
+  background-color: transparent;
+  padding: 1rem 2rem;
+}
+
+.is-fullheight-with-navbar {
+  // viewport height minus navbar height minus footer height minus margins
+  min-height: calc(100vh - 72px - 24px)
+}
+
+.notifications-toast-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9999;
+  width: 100%;
+  max-width: 400px;
+  padding: 1rem;
+
+  .notification {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/**
+ * Animations
+ */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-out {
+  animation-name: fadeOut;
+  animation-duration: 1.5s;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation-name: fadeIn;
+  animation-duration: 1s;
+  animation-fill-mode: forwards;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.75);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.icon-pulse {
+  animation-name: pulse;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.icon-pulse-slow {
+  animation-name: pulse;
+  animation-duration: 3s;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.is-text-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
