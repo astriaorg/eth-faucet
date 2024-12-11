@@ -109,7 +109,7 @@
       <div class="container has-text-centered">
         <div class="column is-6 is-offset-3">
           <h1 class="title">
-            Receive {faucetInfo.payout} RIA per request
+            Receive {faucetInfo.payout} TIA per request
           </h1>
           <h2 class="subtitle is-6">
             Serving from {faucetInfo.account}
@@ -142,7 +142,7 @@
 
 <style>
   .hero.is-info {
-    background: black url('/hero-blocks.webp') no-repeat fixed center center;
+    background: black no-repeat fixed center center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
